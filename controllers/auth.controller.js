@@ -48,7 +48,6 @@ exports.register = async (req, res) => {
         email: user.email,
       },
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -84,7 +83,6 @@ exports.login = async (req, res) => {
         email: user.email,
       },
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -124,7 +122,6 @@ exports.googleLogin = async (req, res) => {
         email: user.email,
       },
     });
-
   } catch (error) {
     res.status(400).json({
       message: "Google authentication failed",
@@ -136,18 +133,40 @@ exports.googleLogin = async (req, res) => {
 //
 // GET PROFILE
 //
+
+//
+// GET PROFILE
+//
 exports.getMe = async (req, res) => {
   try {
+    // Check if req.user exists (from auth middleware)
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        message: "Not authorized - no user found in request. Make sure you're using the auth middleware."
+      });
+    }
+
     const user = await User.findById(req.user.id).select("-password");
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ 
+        success: false,
+        message: "User not found" 
+      });
     }
 
-    res.json(user);
-
+    res.json({
+      success: true,
+      data: user
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("GetMe Error:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Internal server error",
+      error: error.message 
+    });
   }
 };
 
@@ -174,7 +193,6 @@ exports.updatePassword = async (req, res) => {
     await user.save();
 
     res.json({ message: "Password updated successfully" });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -203,7 +221,6 @@ exports.forgotPassword = async (req, res) => {
       message: "Reset token generated",
       resetToken,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -228,7 +245,6 @@ exports.resetPassword = async (req, res) => {
     await user.save();
 
     res.json({ message: "Password reset successful" });
-
   } catch (error) {
     res.status(400).json({ message: "Invalid or expired token" });
   }
@@ -239,6 +255,6 @@ exports.resetPassword = async (req, res) => {
 //
 exports.logout = async (req, res) => {
   res.json({
-    message: "Logged out successfully (remove token on client)"
+    message: "Logged out successfully (remove token on client)",
   });
 };
