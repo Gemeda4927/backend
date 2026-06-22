@@ -7,16 +7,12 @@ const authRoutes = require("./routes/auth.routes");
 const app = express();
 
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
 
-// Production Request Logger
 morgan.token("body", (req) => {
   const body = { ...req.body };
-
-  // Hide sensitive data
   if (body.password) body.password = "*****";
   if (body.token) body.token = "*****";
 
@@ -28,43 +24,35 @@ app.use(
   morgan((tokens, req, res) => {
     return JSON.stringify({
       timestamp: new Date().toISOString(),
-
       method: tokens.method(req, res),
-
       url: tokens.url(req, res),
-
       status: Number(tokens.status(req, res)),
-
       responseTime: `${tokens["response-time"](req, res)} ms`,
-
-      responseSize: `${tokens.res(
-        req,
-        res,
-        "content-length"
-      ) || 0} bytes`,
-
-      ip:
-        req.headers["x-forwarded-for"] ||
-        req.socket.remoteAddress,
-
+      responseSize: `${tokens.res(req, res, "content-length") || 0} bytes`,
+      ip: req.headers["x-forwarded-for"] || req.socket.remoteAddress,
       userAgent: tokens["user-agent"](req, res),
-
       requestBody: tokens.body(req, res),
     });
   })
 );
 
 
-// Routes
+// API Versioning
+const API_V1 = "/api/v1";
+const API_V2 = "/api/v2";
+const API_V3 = "/api/v3";
+
+// Current version routes
+app.use(`${API_V1}/auth`, authRoutes);
 app.use("/api/auth", authRoutes);
-
-
-
 
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
     message: "Route not found",
+    path: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString()
   });
 });
 
